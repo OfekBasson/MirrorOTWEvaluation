@@ -112,17 +112,18 @@ if st.button("Start / Refresh", type="primary", disabled=not can_start):
     base_dir = os.path.join(root_dir, selected_set)
     folders = list_folders(base_dir)
     if shuffle_questions:
-        random.seed(0)
-        random.shuffle(folders)
+        rng_q = random.Random(f"{participant_name}|{selected_set}|questions")
+        rng_q.shuffle(folders)
 
     # Build question list with image lists cached in state
     questions = []
     for folder in folders:
         folder_path = os.path.join(base_dir, folder)
         imgs = list_images(folder_path)
+        imgs = list_images(folder_path)
         if shuffle_images:
-            random.seed(0)
-            random.shuffle(imgs)
+            rng_i = random.Random(f"{participant_name}|{selected_set}|{folder}")
+            rng_i.shuffle(imgs)
         if imgs:
             questions.append({
                 "folder": folder,
