@@ -101,8 +101,6 @@ with col_opts[0]:
     shuffle_questions = st.checkbox("Randomize question (folder) order", value=True)
 with col_opts[1]:
     shuffle_images = st.checkbox("Randomize image order within a question", value=True)
-with col_opts[2]:
-    allow_none = st.checkbox("Include 'None/Can't decide' option", value=True)
 
 if "state_initialized" not in st.session_state:
     st.session_state.state_initialized = False
@@ -267,17 +265,6 @@ for r in range(rows):
                 on_change=_select_best,
                 args=(img_file,),
             )
-
-# Optional None/Can't decide checkbox — perfectly centered across the full width
-none_label = "None / Can't decide"
-if allow_none:
-    left, center, right = st.columns([4, 2, 4])
-    with center:
-        st.checkbox(
-            none_label,
-            key=none_key,
-            on_change=_select_none,
-        )
 
 # --- Navigation buttons BELOW the checkboxes ---
 nav_prev, nav_spacer, nav_next = st.columns([1, 6, 1])
