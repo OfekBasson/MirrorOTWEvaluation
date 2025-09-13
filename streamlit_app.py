@@ -21,7 +21,6 @@ IMG_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff"}
 
 # Only allowlisted images
 ALLOWED_IMAGES = {
-    "Mirror Change Bottom Layers _ Alpha_ 0_5.png",
     "Mirror Change Top Layers _ Alpha_ 0_5.png",
     "No Intervension _ Alpha_ 0_5.png",
 }
@@ -76,24 +75,25 @@ APP_DIR = Path(__file__).resolve().parent
 DEFAULT_ROOT = APP_DIR / "model_outputs"   # folder lives next to streamlit_app.py
 
 root_dir = st.text_input(
-    "Root directory (contains Set folders)",
-    value=str(DEFAULT_ROOT),
-    disabled=True,  # keeps it fixed to the bundled folder for fastest sharing
+    "Root directory (contains question folders)",
+    value="/home/ofek_basson/Evaluation/model_outputs",
 )
 
-# Participant + Set selection
-top_cols = st.columns([2, 2, 1])
-with top_cols[0]:
-    participant_name = st.text_input("Your name *", placeholder="e.g., Ofek").strip()
-with top_cols[1]:
-    available_sets = list_folders(root_dir)
-    # Heuristic: prefer set-like names first
-    ordered_sets = sorted(available_sets, key=lambda s: (not s.lower().startswith("set"), s))
-    selected_set = st.selectbox("Select a Set *", options=ordered_sets if ordered_sets else [""], index=0 if ordered_sets else 0)
-with top_cols[2]:
-    st.write("")
-    st.write("")
-    st.write("")
+# # Participant + Set selection
+# top_cols = st.columns([2, 2, 1])
+# with top_cols[0]:
+#     participant_name = st.text_input("Your name *", placeholder="e.g., Ofek").strip()
+# with top_cols[1]:
+#     available_sets = list_folders(root_dir)
+#     # Heuristic: prefer set-like names first
+#     ordered_sets = sorted(available_sets, key=lambda s: (not s.lower().startswith("set"), s))
+#     selected_set = st.selectbox("Select a Set *", options=ordered_sets if ordered_sets else [""], index=0 if ordered_sets else 0)
+# with top_cols[2]:
+#     st.write("")
+#     st.write("")
+#     st.write("")
+participant_name = st.text_input("Your name *", placeholder="e.g., Ofek").strip()
+
 
 col_opts = st.columns(3)
 with col_opts[0]:
@@ -107,12 +107,16 @@ if "state_initialized" not in st.session_state:
     st.session_state.state_initialized = False
 
 # Start / Refresh is disabled until name & set are provided
-can_start = bool(participant_name) and bool(selected_set)
+# can_start = bool(participant_name) and bool(selected_set)
+can_start = bool(participant_name)
+
 if st.button("Start / Refresh", type="primary", disabled=not can_start):
-    base_dir = os.path.join(root_dir, selected_set)
+    # base_dir = os.path.join(root_dir, selected_set)
+    base_dir = root_dir
+    print(f'base_dir: {base_dir}')
     folders = list_folders(base_dir)
     if shuffle_questions:
-        rng_q = random.Random(f"{participant_name}|{selected_set}|questions")
+        rng_q = random.Random(f"{participant_name}|questions")
         rng_q.shuffle(folders)
 
     # Build question list with image lists cached in state
@@ -120,9 +124,8 @@ if st.button("Start / Refresh", type="primary", disabled=not can_start):
     for folder in folders:
         folder_path = os.path.join(base_dir, folder)
         imgs = list_images(folder_path)
-        imgs = list_images(folder_path)
         if shuffle_images:
-            rng_i = random.Random(f"{participant_name}|{selected_set}|{folder}")
+            rng_i = random.Random(f"{participant_name}|{folder}")
             rng_i.shuffle(imgs)
         if imgs:
             questions.append({
@@ -134,7 +137,7 @@ if st.button("Start / Refresh", type="primary", disabled=not can_start):
     st.session_state.questions = questions
     st.session_state.current_idx = 0
     st.session_state.participant_name = participant_name
-    st.session_state.selected_set = selected_set
+    # st.session_state.selected_set = selected_set
     # answers: folder -> {"mode": "best"|"worst_equal"|"none", "choice": <str or list[str]>}
     st.session_state.answers: Dict[str, Dict[str, Any]] = {}
     st.session_state.state_initialized = True
@@ -142,14 +145,16 @@ if st.button("Start / Refresh", type="primary", disabled=not can_start):
 # Guard: if not initialized yet
 if not st.session_state.state_initialized:
     if not can_start:
-        st.info("Enter your **name** and **select a set**, then click **Start / Refresh**.")
+        # st.info("Enter your **name** and **select a set**, then click **Start / Refresh**.")
+        st.info("Enter your **name**, then click **Start / Refresh**.")
     else:
         st.info("Click **Start / Refresh** to load questions.")
     st.stop()
 
 questions = st.session_state.get("questions", [])
 if not questions:
-    st.warning("No questions found. Ensure the selected set has subfolders with images.")
+    # st.warning("No questions found. Ensure the selected set has subfolders with images.")
+    st.warning("No questions found. Ensure the root directory has subfolders with images.")
     st.stop()
 
 # Navigation state
@@ -160,7 +165,7 @@ st.session_state.current_idx = idx
 
 # Persisted meta
 participant_name = st.session_state.get("participant_name", participant_name)
-selected_set = st.session_state.get("selected_set", selected_set)
+# selected_set = st.session_state.get("selected_set", selected_set)
 
 # Current question
 q = questions[idx]
@@ -168,7 +173,7 @@ folder = q["folder"]
 folder_path = q["path"]
 imgs = q["images"]
 
-st.subheader(f"Participant: {participant_name}  |  Set: {selected_set}")
+st.subheader(f"Participant: {participant_name}")
 st.subheader(f"Question {idx+1} / {nq}  —  Folder: {folder}")
 
 # Layout images in a responsive grid (max 4 per row)
@@ -261,12 +266,6 @@ for r in range(rows):
                 on_change=_select_best,
                 args=(img_file,),
             )
-            st.checkbox(
-                "This is the worst, but the 2 others are equal",
-                key=worst_key,
-                on_change=_select_worst,
-                args=(img_file,),
-            )
 
 # Optional None/Can't decide checkbox — perfectly centered across the full width
 none_label = "None / Can't decide"
@@ -303,26 +302,26 @@ for qd in questions:
     f = qd["folder"]
     ans = st.session_state.answers.get(f)
     if not ans:
-        results.append({"participant": participant_name, "set": selected_set, "folder": f, "selected_file": ""})
+        results.append({"participant": participant_name, "folder": f, "selected_file": ""})
         continue
     mode = ans.get("mode")
     if mode == "best":
-        results.append({"participant": participant_name, "set": selected_set, "folder": f, "selected_file": ans.get("choice", "")})
+        results.append({"participant": participant_name, "folder": f, "selected_file": ans.get("choice", "")})
     elif mode == "worst_equal":
         others = ans.get("choice", [])
         if len(others) >= 2:
             msg = f"equal score for {others[0]} and {others[1]}"
         else:
             msg = "equal score for " + " and ".join(others)
-        results.append({"participant": participant_name, "set": selected_set, "folder": f, "selected_file": msg})
+        results.append({"participant": participant_name, "folder": f, "selected_file": msg})
     elif mode == "none":
-        results.append({"participant": participant_name, "set": selected_set, "folder": f, "selected_file": none_label})
+        results.append({"participant": participant_name, "folder": f, "selected_file": none_label})
     else:
-        results.append({"participant": participant_name, "set": selected_set, "folder": f, "selected_file": ""})
+        results.append({"participant": participant_name, "folder": f, "selected_file": ""})
 
 # CSV bytes
 output = io.StringIO()
-writer = csv.DictWriter(output, fieldnames=["participant", "set", "folder", "selected_file"])
+writer = csv.DictWriter(output, fieldnames=["participant", "folder", "selected_file"])
 writer.writeheader()
 writer.writerows(results)
 csv_text = output.getvalue()
@@ -331,7 +330,7 @@ csv_bytes = csv_text.encode("utf-8")
 # Save a copy to disk under root/results
 results_dir = os.path.join(root_dir, "results")
 os.makedirs(results_dir, exist_ok=True)
-fn = f"{slugify(participant_name)}_{slugify(selected_set)}_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+fn = f"{slugify(participant_name)}_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 file_path = os.path.join(results_dir, fn)
 try:
     with open(file_path, "w", encoding="utf-8") as f:
