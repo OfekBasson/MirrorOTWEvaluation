@@ -75,8 +75,9 @@ APP_DIR = Path(__file__).resolve().parent
 DEFAULT_ROOT = APP_DIR / "model_outputs"   # folder lives next to streamlit_app.py
 
 root_dir = st.text_input(
-    "Root directory (contains question folders)",
-    value="/home/ofek_basson/Evaluation/model_outputs",
+    "Root directory (contains Set folders)",
+    value=str(DEFAULT_ROOT),
+    disabled=True,  # keeps it fixed to the bundled folder for fastest sharing
 )
 
 # # Participant + Set selection
